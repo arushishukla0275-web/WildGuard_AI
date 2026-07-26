@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WildGuard AI — Wildfire Risk Command</title>
+<meta name="description" content="Real-time wildfire risk assessment and directional spread analysis.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<div class="scanlines" aria-hidden="true"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <svg class="brand-mark" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M24 4C24 4 14 16 14 26C14 33.2 18.8 38 24 38C29.2 38 34 33.2 34 26C34 22 32 18 32 18C32 18 30 22 27 22C27 22 29 14 24 4Z" fill="currentColor"/>
+      <path d="M24 44C29.5228 44 34 40.4183 34 36C34 33.5 32 30 32 30C32 30 30.5 33.5 27.5 33.5C27.5 33.5 28.5 29 24 22C24 22 18 29 18 34.5C18 34.5 16 33 15.5 30C15.5 30 14 33.5 14 36C14 40.4772 18.4772 44 24 44Z" fill="var(--char)"/>
+    </svg>
+    <div class="brand-text">
+      <span class="brand-name">WILDGUARD<span class="brand-ai">·AI</span></span>
+      <span class="brand-sub">Fire Threat Command</span>
+    </div>
+  </div>
+  <div class="status-pill" id="statusPill">
+    <span class="dot"></span> <span id="statusPillText">READY</span>
+  </div>
+</header>
+
+<main class="deck">
+
+  <section class="page-intro">
+    <p class="eyebrow">Micro-climate fire intelligence</p>
+    <h1>Know the risk before the smoke does.</h1>
+    <p class="lede">Pick a spot on the map, set the conditions on the ground, and WildGuard AI fuses them with live NASA FIRMS satellite hotspots to score fire threat — with a printable action plan at the end.</p>
+  </section>
+
+  <!-- STEPPER NAV -->
+  <nav class="stepper" aria-label="Assessment progress">
+    <button class="step-dot active" data-step="1" type="button"><span class="step-num">01</span><span class="step-name">Location</span></button>
+    <span class="step-line"></span>
+    <button class="step-dot" data-step="2" type="button"><span class="step-num">02</span><span class="step-name">Conditions</span></button>
+    <span class="step-line"></span>
+    <button class="step-dot" data-step="3" type="button"><span class="step-num">03</span><span class="step-name">Analysis</span></button>
+    <span class="step-line"></span>
+    <button class="step-dot" data-step="4" type="button"><span class="step-num">04</span><span class="step-name">Action Plan</span></button>
+  </nav>
+
+  <!-- ============ STEP 1 — LOCATION ============ -->
+  <section class="panel step-panel" data-step-panel="1">
+    <div class="panel-head">
+      <h2><span class="idx">01</span> Pinpoint the Location</h2>
+      <p class="panel-sub">Search a place, use your current position, or click anywhere on the map to drop a pin.</p>
+    </div>
+
+    <div class="location-row">
+      <div class="field field-search">
+        <label for="locSearch">Search a place</label>
+        <input type="text" id="locSearch" placeholder="e.g. Kanha, Bandhavgarh, Raipur…" autocomplete="off">
+        <div class="suggest-list" id="suggestList" hidden></div>
+      </div>
+      <button class="ghost-btn" id="geoBtn" type="button">📍 Use my location</button>
+    </div>
+
+    <div id="mapPick" class="map-el"></div>
+
+    <div class="location-status">
+      <div class="coord-readout">
+        <div><span>PLACE</span><output id="placeOut">Chhattisgarh, India</output></div>
+        <div><span>LAT</span><output id="latOut">21.2500</output></div>
+        <div><span>LON</span><output id="lonOut">81.6300</output></div>
+      </div>
+    </div>
+
+    <div class="step-nav">
+      <span></span>
+      <button class="run-btn" data-goto="2" type="button">Next: Set Conditions →</button>
+    </div>
+  </section>
+
+  <!-- ============ STEP 2 — CONDITIONS ============ -->
+  <section class="panel step-panel" data-step-panel="2" hidden>
+    <div class="panel-head">
+      <h2><span class="idx">02</span> Set Environmental Conditions</h2>
+      <p class="panel-sub">Dial in the numbers, or pull real current weather for the pinned location.</p>
+    </div>
+
+    <button class="live-btn" id="liveWeatherBtn" type="button">
+      ⚡ Pull Live Weather for This Spot
+    </button>
+    <p class="live-status" id="liveStatus">Manual input — conditions not yet synced to live weather.</p>
+
+    <div class="sliders">
+      <div class="field slider-field">
+        <label for="temp">Temperature <span class="unit">°C</span></label>
+        <input type="range" id="temp" min="10" max="50" step="0.5" value="38">
+        <output for="temp" id="tempOut">38.0</output>
+      </div>
+      <div class="field slider-field">
+        <label for="humidity">Relative Humidity <span class="unit">%</span></label>
+        <input type="range" id="humidity" min="1" max="100" step="1" value="18">
+        <output for="humidity" id="humidityOut">18</output>
+      </div>
+      <div class="field slider-field">
+        <label for="wind">Wind Speed <span class="unit">km/h</span></label>
+        <input type="range" id="wind" min="0" max="80" step="0.5" value="25">
+        <output for="wind" id="windOut">25.0</output>
+      </div>
+      <div class="field slider-field">
+        <label for="ndvi">Vegetation Moisture <span class="unit">NDVI</span></label>
+        <input type="range" id="ndvi" min="0" max="1" step="0.01" value="0.22">
+        <output for="ndvi" id="ndviOut">0.22</output>
+      </div>
+    </div>
+    <p class="hint">NDVI has no free real-time public feed, so this stays a manual estimate — 0.1–0.2 for dry scrub, 0.6+ for lush canopy.</p>
+
+    <div class="step-nav">
+      <button class="ghost-btn" data-goto="1" type="button">← Back</button>
+      <button class="run-btn" id="runBtn" type="button">
+        <span class="run-btn-text">Run Threat Analysis</span>
+        <span class="run-btn-spin" aria-hidden="true"></span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ============ STEP 3 — ANALYSIS ============ -->
+  <section class="panel step-panel" data-step-panel="3" hidden>
+    <div class="panel-head panel-head-row">
+      <div>
+        <h2><span class="idx">03</span> Threat Analysis</h2>
+        <p class="panel-sub">Live NASA hotspots + your inputs, fused into a threat score.</p>
+      </div>
+      <div class="refresh-control">
+        <label class="switch">
+          <input type="checkbox" id="autoRefreshToggle">
+          <span class="switch-track"></span>
+        </label>
+        <div class="refresh-text">
+          <span>Live auto-refresh</span>
+          <small id="lastUpdated">Not started</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-analysis">
+      <div class="gauge-wrap">
+        <div class="gauge" id="gauge" data-risk="LOW">
+          <svg viewBox="0 0 200 200" class="gauge-svg">
+            <circle cx="100" cy="100" r="86" class="gauge-track"/>
+            <circle cx="100" cy="100" r="86" class="gauge-fill" id="gaugeFill"/>
+            <circle cx="100" cy="100" r="86" class="gauge-sweep" id="gaugeSweep"/>
+          </svg>
+          <div class="gauge-center">
+            <span class="gauge-label">FIRE THREAT INDEX</span>
+            <span class="gauge-value" id="gaugeValue">0<span class="gauge-pct">%</span></span>
+            <span class="gauge-risk" id="gaugeRisk">LOW</span>
+          </div>
+        </div>
+      </div>
+      <div class="hero-stats" id="heroStats">
+        <div class="hstat">
+          <span class="hstat-value" id="statHotspots">—</span>
+          <span class="hstat-label">Active satellite hotspots</span>
+        </div>
+        <div class="hstat">
+          <span class="hstat-value" id="statPeak">—</span>
+          <span class="hstat-label">Peak danger window</span>
+        </div>
+        <div class="hstat">
+          <span class="hstat-value" id="statPlace">—</span>
+          <span class="hstat-label">Assessed location</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="mapResult" class="map-el"></div>
+    <div class="map-legend">
+      <span><i class="dot-legend target"></i> Assessment point</span>
+      <span><i class="dot-legend hotspot"></i> Satellite hotspot</span>
+    </div>
+
+    <div class="charts-grid">
+      <div class="chart-card chart-wide">
+        <h3>24-Hour Risk Curve</h3>
+        <canvas id="lineChart"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>Contributing Factors</h3>
+        <canvas id="barChart"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>Factor Share</h3>
+        <canvas id="pieChart"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>Ember Scatter Field</h3>
+        <canvas id="scatterChart"></canvas>
+      </div>
+    </div>
+
+    <div class="forecast-block">
+      <div class="panel-head">
+        <h2><span class="idx">FC</span> Forecast Outlook</h2>
+        <p class="panel-sub" id="forecastStatus">Loading the 7-day weather outlook for this spot…</p>
+      </div>
+      <div class="chart-card chart-wide forecast-hourly-card">
+        <h3>Next 48 Hours — Projected Fire Threat</h3>
+        <canvas id="forecastHourlyChart"></canvas>
+      </div>
+      <div class="day-strip" id="dayStrip"></div>
+      <p class="hint">Forecast risk uses the same Temperature × Wind ÷ Humidity model as the live analysis, applied to forecast weather. Vegetation moisture (NDVI) is held at your current setting since it changes slowly day to day.</p>
+    </div>
+
+    <div class="step-nav">
+      <button class="ghost-btn" data-goto="2" type="button">← Back</button>
+      <button class="run-btn" data-goto="4" type="button">View Action Plan →</button>
+    </div>
+  </section>
+
+  <!-- ============ STEP 4 — ACTION PLAN ============ -->
+  <section class="panel step-panel" data-step-panel="4" hidden>
+    <div class="panel-head">
+      <h2><span class="idx">04</span> Field Operations Checklist</h2>
+      <p class="panel-sub">Generated for the current risk level — download it for the field team.</p>
+    </div>
+    <ul class="ops-list" id="opsList">
+      <li class="ops-empty">Run an analysis to generate a checklist.</li>
+    </ul>
+
+    <div class="step-nav report-nav">
+      <button class="ghost-btn" data-goto="3" type="button">← Back to Analysis</button>
+      <button class="download-btn" id="downloadBtn" type="button">⬇ Download PDF Report</button>
+      <button class="ghost-btn" id="restartBtn" type="button">Start New Assessment</button>
+    </div>
+  </section>
+
+</main>
+
+<footer class="foot">
+  <p>Data: NASA FIRMS (VIIRS active fire) · Open-Meteo live weather · OpenStreetMap / CartoDB basemap · Nominatim geocoding.</p>
+  <p class="foot-disclaimer">Decision-support estimate only — not a substitute for official fire agency guidance.</p>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
