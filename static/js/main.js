@@ -77,6 +77,28 @@
   // ================= MAPS =================
   const latOut = $("latOut"), lonOut = $("lonOut"), placeOut = $("placeOut");
 
+  // Dark theme for Leaflet's own UI (zoom buttons, popups, map background)
+  const darkMapStyle = document.createElement("style");
+  darkMapStyle.textContent = `
+    .leaflet-container { background: #0d1117; }
+
+    .leaflet-bar a,
+    .leaflet-bar a:hover {
+      background-color: #161b22;
+      color: #e6edf3;
+      border-bottom: 1px solid #30363d;
+    }
+
+    .leaflet-popup-content-wrapper,
+    .leaflet-popup-tip {
+      background: #161b22;
+      color: #e6edf3;
+      box-shadow: 0 3px 14px rgba(0, 0, 0, 0.6);
+    }
+    .leaflet-popup-close-button { color: #8b949e !important; }
+  `;
+  document.head.appendChild(darkMapStyle);
+
   const targetIcon = () =>
     L.divIcon({
       className: "",
@@ -90,15 +112,17 @@
       iconSize: [11, 11],
     });
 
-  const mapPick = L.map("mapPick", { zoomControl: true, attributionControl: false }).setView([state.lat, state.lon], 7);
-  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(mapPick);
-  let pickMarker = L.marker([state.lat, state.lon], { icon: targetIcon() }).addTo(mapPick);
+  const DARK_TILES = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
+const darkTileOptions = { subdomains: "abcd", maxZoom: 20 };
 
-  const mapResult = L.map("mapResult", { zoomControl: true, attributionControl: false }).setView([state.lat, state.lon], 7);
-  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(mapResult);
-  let resultMarker = L.marker([state.lat, state.lon], { icon: targetIcon() }).addTo(mapResult);
-  let hotspotLayer = L.layerGroup().addTo(mapResult);
+const mapPick = L.map("mapPick", { zoomControl: true, attributionControl: false }).setView([state.lat, state.lon], 7);
+L.tileLayer(DARK_TILES, darkTileOptions).addTo(mapPick);
+let pickMarker = L.marker([state.lat, state.lon], { icon: targetIcon() }).addTo(mapPick);
 
+const mapResult = L.map("mapResult", { zoomControl: true, attributionControl: false }).setView([state.lat, state.lon], 7);
+L.tileLayer(DARK_TILES, darkTileOptions).addTo(mapResult);
+let resultMarker = L.marker([state.lat, state.lon], { icon: targetIcon() }).addTo(mapResult);
+let hotspotLayer = L.layerGroup().addTo(mapResult);
   mapPick.on("click", (e) => {
     setLocation(e.latlng.lat, e.latlng.lng, null, 9);
     reverseGeocode(e.latlng.lat, e.latlng.lng);
