@@ -29,7 +29,7 @@ csp = {
         'https://fonts.googleapis.com'
     ],
     'font-src': ["'self'", 'https://fonts.gstatic.com'],
-    'img-src': ["'self'", 'data:', 'https://*.basemaps.cartocdn.com', 'https://*.tile.openstreetmap.org', 'https://tile.openstreetmap.org', 'https://unpkg.com'],
+    'img-src': ["'self'", 'data:', 'https://*.basemaps.cartocdn.com', 'https://*.tile.openstreetmap.org', 'https://tile.openstreetmap.org', 'https://server.arcgisonline.com', 'https://unpkg.com'],
     'connect-src': ["'self'", 'https://nominatim.openstreetmap.org', 'https://firms.modaps.eosdis.nasa.gov', 'https://api.open-meteo.com']
 }
 
