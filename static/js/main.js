@@ -82,6 +82,10 @@
   darkMapStyle.textContent = `
     .leaflet-container { background: #0d1117; }
 
+    .dark-tiles {
+      filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+    }
+
     .leaflet-bar a,
     .leaflet-bar a:hover {
       background-color: #161b22;
@@ -112,8 +116,8 @@
       iconSize: [11, 11],
     });
 
-  const DARK_TILES = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
-const darkTileOptions = { subdomains: "abcd", maxZoom: 20 };
+  const DARK_TILES = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
+const darkTileOptions = { maxZoom: 19, className: "dark-tiles" };
 
 const mapPick = L.map("mapPick", { zoomControl: true, attributionControl: false }).setView([state.lat, state.lon], 7);
 L.tileLayer(DARK_TILES, darkTileOptions).addTo(mapPick);
