@@ -91,11 +91,11 @@
     });
 
   const mapPick = L.map("mapPick", { zoomControl: true, attributionControl: false }).setView([state.lat, state.lon], 7);
-  L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 }).addTo(mapPick);
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(mapPick);
   let pickMarker = L.marker([state.lat, state.lon], { icon: targetIcon() }).addTo(mapPick);
 
   const mapResult = L.map("mapResult", { zoomControl: true, attributionControl: false }).setView([state.lat, state.lon], 7);
-  L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16 }).addTo(mapResult);
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(mapResult);
   let resultMarker = L.marker([state.lat, state.lon], { icon: targetIcon() }).addTo(mapResult);
   let hotspotLayer = L.layerGroup().addTo(mapResult);
 
