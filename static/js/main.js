@@ -51,7 +51,7 @@
     dot.addEventListener("click", () => {
       const target = Number(dot.dataset.step);
       // only allow jumping to a step that's already been reached, or the very next one
-      if (target <= currentStep || (target === 3 && state.lastResult) || target <=4) goToStep(target);
+      if (target <= currentStep || target === currentStep + 1 || (target === 3 && state.lastResult)) goToStep(target);
     });
   });
 
@@ -317,11 +317,14 @@
       const hums = data.hourly.relative_humidity_2m;
       const winds = data.hourly.wind_speed_10m;
 
-      // --- next 48 hours ---
-      const hourCount = Math.min(48, times.length);
+      // --- next 48 hours (starting from the current hour at the location) ---
+      const nowLocal = Date.now() + (data.utc_offset_seconds || 0) * 1000;
+      let startIdx = times.findIndex((iso) => Date.parse(iso + "Z") >= nowLocal - 3600 * 1000);
+      if (startIdx < 0) startIdx = 0;
+      const hourEnd = Math.min(startIdx + 48, times.length);
       const hourLabels = [];
       const hourFti = [];
-      for (let i = 0; i < hourCount; i++) {
+      for (let i = startIdx; i < hourEnd; i++) {
         const t = new Date(times[i]);
         hourLabels.push(t.toLocaleTimeString([], { hour: "2-digit" }).replace(":00", "") + (t.getHours() === 0 ? " " + t.toLocaleDateString([], { weekday: "short" }) : ""));
         const safeRh = Math.max(hums[i], 1);
@@ -546,7 +549,7 @@
     doc.text("Field Operations Checklist", margin, y); y += 22;
     doc.setFont("helvetica", "normal"); doc.setFontSize(10.5);
     data.precautions.forEach((p) => {
-      const clean = p.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, "").trim();
+      const clean = p.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\uFE0F]/gu, "").trim();
       const lines = doc.splitTextToSize(`•  ${clean}`, pageW - margin * 2);
       if (y + lines.length * 14 > 780) { doc.addPage(); y = 50; }
       doc.text(lines, margin, y);
